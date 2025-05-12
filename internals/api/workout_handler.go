@@ -32,7 +32,17 @@ func (wh *WorkoutHandler) HandleGetWorkoutByID(w http.ResponseWriter, r *http.Re
 		http.NotFound(w, r)
 		return
 	}
-	fmt.Fprintf(w, "this is the workout id %d\n", workoutID)
+
+	// asking the data layer to give the workout with workoutID
+	workout, err := wh.workoutStore.GetWorkoutByID(workoutID)
+	if err != nil {
+		// for now its handled
+		fmt.Println(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(workout)
 }
 
 func (wh *WorkoutHandler) HandleCreateWorkout(w http.ResponseWriter, r *http.Request) {

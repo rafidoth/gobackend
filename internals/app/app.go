@@ -31,8 +31,10 @@ func NewApplication() (*Application, error) {
 
 	logger := log.New(os.Stdout, "logging : ", log.Ldate|log.Ltime)
 
+	// grabbing data store from data layer
 	workoutStore := store.NewPostgresWorkoutStore(pgDB)
 
+	// injecting data from data layer to app layer
 	workoutHandler := api.NewWorkoutHandler(workoutStore)
 
 	app := &Application{
