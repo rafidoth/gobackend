@@ -102,7 +102,7 @@ func (wh *WorkoutHandler) HandleUpdateWorkout(w http.ResponseWriter, r *http.Req
 		return
 	}
 	fmt.Println("updated workout", updatedWorkout)
-
+	updatedWorkout.ID = int(wID)
 	err = wh.workoutStore.UpdateWorkout(&updatedWorkout)
 
 	if err != nil {

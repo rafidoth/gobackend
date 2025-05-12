@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"fmt"
 )
 
 type Workout struct {
@@ -149,27 +150,33 @@ func (pg *PostgresWorkoutStore) UpdateWorkout(workout *Workout) error {
 
 	defer tx.Rollback()
 
+	// update workout
 	query := `
 	UPDATE workouts
 	SET title = $1, description = $2, duration_minutes = $3, calories_burned = $4
 	WHERE id = $5
 	`
-	result, err := tx.Exec(query, workout.Title, workout.Description, workout.DurationMinutes, workout.CaloriesBurned)
+	result, err := tx.Exec(query, workout.Title, workout.Description, workout.DurationMinutes, workout.CaloriesBurned, workout.ID)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	rowsaffected, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
-
+	fmt.Println("rowsaffected", rowsaffected)
 	if rowsaffected == 0 {
 		return sql.ErrNoRows
 	}
 
-	_, err = tx.Exec(`DELETE FROM workouts_entries WHERE workout_id = $1`, workout.ID)
+	// delete existing workout entries
+	_, err = tx.Exec(`DELETE FROM workout_entries WHERE workout_id = $1`, workout.ID)
+	if err != nil {
+		return err
+	}
 
+	// inserting new workout entries
 	for _, entry := range workout.Entries {
 		query = `
 		INSERT INTO workout_entries (workout_id, exercise_name, sets, reps, duration_seconds, weight, notes, order_index) 
