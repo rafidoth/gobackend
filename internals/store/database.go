@@ -41,3 +41,4 @@ func Migrate(db *sql.DB, dir string) error {
 	}
 	return nil
 }
+
