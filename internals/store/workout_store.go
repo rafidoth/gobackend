@@ -1,6 +1,8 @@
 package store
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
 type Workout struct {
 	ID              int            `json:"id"`
@@ -33,6 +35,7 @@ func NewPostgresWorkoutStore(db *sql.DB) *PostgresWorkoutStore {
 type WorkoutStore interface {
 	CreateWorkout(*Workout) (*Workout, error)
 	GetWorkoutByID(id int64) (*Workout, error)
+	UpdateWorkout(*Workout) error
 }
 
 func (pg *PostgresWorkoutStore) CreateWorkout(w *Workout) (*Workout, error) {
@@ -75,7 +78,6 @@ func (pg *PostgresWorkoutStore) CreateWorkout(w *Workout) (*Workout, error) {
 		if err != nil {
 			return nil, err
 		}
-
 	}
 
 	err = tx.Commit()
@@ -107,7 +109,7 @@ func (pg *PostgresWorkoutStore) GetWorkoutByID(id int64) (*Workout, error) {
 
 	// getting entries under this workout
 	query = `
-	SELECT exercise_name, sets, reps, duration_seconds, weights, notes, order_index
+	SELECT exercise_name, sets, reps, duration_seconds, weight, notes, order_index
 	FROM workout_entries
 	WHERE workout_id = $1
 	ORDER BY order_index 
@@ -189,6 +191,10 @@ func (pg *PostgresWorkoutStore) UpdateWorkout(workout *Workout) error {
 		}
 
 	}
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
 
 }

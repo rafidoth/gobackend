@@ -38,10 +38,12 @@ func (wh *WorkoutHandler) HandleGetWorkoutByID(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		// for now its handled
 		fmt.Println(err)
+		http.Error(w, "Failed to fetch the workout", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(workout)
 }
 
@@ -65,3 +67,53 @@ func (wh *WorkoutHandler) HandleCreateWorkout(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(createdWorkout)
 
 }
+
+func (wh *WorkoutHandler) HandleUpdateWorkout(w http.ResponseWriter, r *http.Request) {
+
+	paramsWorkoutID := chi.URLParam(r, "id")
+	if paramsWorkoutID == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	wID, err := strconv.ParseInt(paramsWorkoutID, 10, 64)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	existingWorkout, err := wh.workoutStore.GetWorkoutByID(wID)
+	if err != nil {
+		http.Error(w, "failed to fetch workout", http.StatusInternalServerError)
+		return
+	}
+
+	if existingWorkout == nil {
+		http.NotFound(w, r)
+		return
+	}
+	fmt.Println("existing workout", existingWorkout)
+
+	var updatedWorkout store.Workout
+
+	err = json.NewDecoder(r.Body).Decode(&updatedWorkout)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	fmt.Println("updated workout", updatedWorkout)
+
+	err = wh.workoutStore.UpdateWorkout(&updatedWorkout)
+
+	if err != nil {
+		fmt.Println("update workout error", err)
+		http.Error(w, "failed to update the workout", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(updatedWorkout)
+
+}
+
