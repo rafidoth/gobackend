@@ -9,6 +9,7 @@ import (
 
 	"github.com/rafidoth/goback/internals/api"
 	"github.com/rafidoth/goback/internals/store"
+	"github.com/rafidoth/goback/migrations"
 )
 
 type Application struct {
@@ -23,8 +24,16 @@ func NewApplication() (*Application, error) {
 		return nil, err
 	}
 
+	err = store.MigrateFS(pgDB, migrations.FS, ".")
+	if err != nil {
+		panic(err)
+	}
+
 	logger := log.New(os.Stdout, "logging : ", log.Ldate|log.Ltime)
-	workoutHandler := api.NewWorkoutHandler()
+
+	workoutStore := store.NewPostgresWorkoutStore(pgDB)
+
+	workoutHandler := api.NewWorkoutHandler(workoutStore)
 
 	app := &Application{
 		Logger:         logger,
