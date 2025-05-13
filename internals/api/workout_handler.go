@@ -4,34 +4,29 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
-	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/rafidoth/goback/internals/store"
+	"github.com/rafidoth/goback/internals/utils"
 )
 
 type WorkoutHandler struct {
 	workoutStore store.WorkoutStore
+	logger       *log.Logger
 }
 
-func NewWorkoutHandler(ws store.WorkoutStore) *WorkoutHandler {
+func NewWorkoutHandler(ws store.WorkoutStore, logger *log.Logger) *WorkoutHandler {
 	return &WorkoutHandler{
 		workoutStore: ws,
+		logger:       logger,
 	}
 }
 
 func (wh *WorkoutHandler) HandleGetWorkoutByID(w http.ResponseWriter, r *http.Request) {
-	paramsWorkoutID := chi.URLParam(r, "id")
-	if paramsWorkoutID == "" {
-		http.NotFound(w, r)
-		return
-	}
-
-	workoutID, err := strconv.ParseInt(paramsWorkoutID, 10, 64)
+	workoutID, err := utils.ReadIntParam(r, "id")
 	if err != nil {
-		http.NotFound(w, r)
-		return
+		wh.logger.Printf("Error ")
 	}
 
 	// asking the data layer to give the workout with workoutID
@@ -70,17 +65,7 @@ func (wh *WorkoutHandler) HandleCreateWorkout(w http.ResponseWriter, r *http.Req
 }
 
 func (wh *WorkoutHandler) HandleDeleteWOrkout(w http.ResponseWriter, r *http.Request) {
-	paramsWorkoutID := chi.URLParam(r, "id")
-	if paramsWorkoutID == "" {
-		http.NotFound(w, r)
-		return
-	}
-
-	wID, err := strconv.ParseInt(paramsWorkoutID, 10, 64)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
+	wID, err := utils.ReadIntParam(r, "id")
 
 	existingWorkout, err := wh.workoutStore.GetWorkoutByID(wID)
 	if err != nil {
@@ -109,17 +94,7 @@ func (wh *WorkoutHandler) HandleDeleteWOrkout(w http.ResponseWriter, r *http.Req
 
 func (wh *WorkoutHandler) HandleUpdateWorkout(w http.ResponseWriter, r *http.Request) {
 
-	paramsWorkoutID := chi.URLParam(r, "id")
-	if paramsWorkoutID == "" {
-		http.NotFound(w, r)
-		return
-	}
-
-	wID, err := strconv.ParseInt(paramsWorkoutID, 10, 64)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
+	wID, err := utils.ReadIntParam(r, "id")
 
 	existingWorkout, err := wh.workoutStore.GetWorkoutByID(wID)
 	if err != nil {
@@ -140,12 +115,11 @@ func (wh *WorkoutHandler) HandleUpdateWorkout(w http.ResponseWriter, r *http.Req
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Println("updated workout", updatedWorkout)
+
 	updatedWorkout.ID = int(wID)
 	err = wh.workoutStore.UpdateWorkout(&updatedWorkout)
 
 	if err != nil {
-		fmt.Println("update workout error", err)
 		http.Error(w, "failed to update the workout", http.StatusInternalServerError)
 		return
 	}
